@@ -420,8 +420,6 @@ static int ___scm_call_armv8_64(u64 x0, u64 x1, u64 x2, u64 x3, u64 x4, u64 x5,
 			  "x14", "x15", "x16", "x17");
 	} while (r0 == SCM_INTERRUPTED);
 
-	atomic_dec(&scm_call_count);
-
 	if (ret1)
 		*ret1 = r1;
 	if (ret2)
@@ -484,8 +482,6 @@ static int ___scm_call_armv8_32(u32 w0, u32 w1, u32 w2, u32 w3, u32 w4, u32 w5,
 
 	} while (r0 == SCM_INTERRUPTED);
 
-	atomic_dec(&scm_call_count);
-
 	if (ret1)
 		*ret1 = r1;
 	if (ret2)
@@ -547,8 +543,6 @@ static int ___scm_call_armv8_32(u32 w0, u32 w1, u32 w2, u32 w3, u32 w4, u32 w5,
 			 "r" (r5), "r" (r6));
 
 	} while (r0 == SCM_INTERRUPTED);
-
-	atomic_dec(&scm_call_count);
 
 	if (ret1)
 		*ret1 = r1;
