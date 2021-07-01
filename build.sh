@@ -52,7 +52,7 @@ export KBUILD_BUILD_USER=punisher
 export KBUILD_BUILD_HOST=nidavellir
 
 SECONDS=0 # builtin bash timer
-ZIPNAME="NotKernel-miatoll-$(date '+%Y%m%d-%H%M').zip"
+ZIPNAME="NotKernel-miatoll-$(date +"%F-%S").zip"
 if test -z "$(git rev-parse --show-cdup 2>/dev/null)" &&
    head=$(git rev-parse --verify HEAD 2>/dev/null); then
         ZIPNAME="${ZIPNAME::-4}-$(echo $head | cut -c1-8).zip"
