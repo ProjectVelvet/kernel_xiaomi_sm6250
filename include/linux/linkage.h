@@ -23,15 +23,17 @@
 #endif
 
 #ifndef cond_syscall
-#define cond_syscall(x) \
-	long __attribute__((weak, alias("sys_ni_syscall"))) x(void);
+#define cond_syscall(x)	asm(				\
+	".weak " __stringify(x) "\n\t"			\
+	".set  " __stringify(x) ","			\
+		 __stringify(sys_ni_syscall))
 #endif
 
 #ifndef SYSCALL_ALIAS
 #define SYSCALL_ALIAS(alias, name) asm(			\
-	".globl " VMLINUX_SYMBOL_STR(alias) "\n\t"	\
-	".set   " VMLINUX_SYMBOL_STR(alias) ","		\
-		  VMLINUX_SYMBOL_STR(name))
+	".globl " __stringify(alias) "\n\t"		\
+	".set   " __stringify(alias) ","		\
+		  __stringify(name))
 #endif
 
 #define __page_aligned_data	__section(.data..page_aligned) __aligned(PAGE_SIZE)
