@@ -21,9 +21,8 @@ DEVICE=MiAtoll
 DEFCONFIG=cust_defconfig
 
 # Files
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz
+IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
-DTB=$(pwd)/out/arch/arm64/boot/dts/qcom/cust-atoll-ab.dtb
 
 # Verbose Build
 VERBOSE=0
@@ -73,6 +72,12 @@ function cloneTC() {
 	git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 
+        elif [ $COMPILER = "cosmic" ];
+	then
+        post_msg " Cloning Cosmic Clang ToolChain "
+	git clone --depth=1 https://gitlab.com/ghostmaster69-dev/cosmic-clang clang
+	PATH="${KERNEL_DIR}/clang/bin:$PATH"
+
 	elif [ $COMPILER = "proton-13" ];
 	then
         post_msg " Cloning Proton Clang 13 ToolChain "
@@ -105,7 +110,7 @@ function cloneTC() {
 	PATH="${KERNEL_DIR}/aosp-clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
 	fi
         # Clone AnyKernel
-        git clone --depth=1 https://github.com/Excalibur-99/AnyKernel3
+        git clone --depth=1 https://github.com/Excalibur-99/AnyKernel3 -b master
 
         }
 
@@ -247,7 +252,6 @@ function zipping() {
 	# Copy Files To AnyKernel3 Zip
 	cp $IMAGE AnyKernel3
 	cp $DTBO AnyKernel3
-        cp $DTB AnyKernel3/dtb
 	# Zipping and Push Kernel
 	cd AnyKernel3 || exit 1
         zip -r9 ${FINAL_ZIP} *
