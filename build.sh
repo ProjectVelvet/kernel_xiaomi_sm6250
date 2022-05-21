@@ -10,7 +10,7 @@ KERNEL_DIR="$(pwd)"
 
 ##----------------------------------------------------------##
 # Kernel Version Code
-VERSION=CyberPunk-v1.4
+VERSION=Apex-v1.5
 
 ##----------------------------------------------------------##
 # Device Name and Model
