@@ -10,7 +10,7 @@ set -e
 ##----------------------------------------------------------##
 # Basic Information
 KERNEL_DIR="$(pwd)"
-VERSION=Apex-v1.5
+VERSION=Phoenix_vSapphire
 MODEL=Xiaomi
 DEVICE=MiAtoll
 DEFCONFIG=cust_defconfig
@@ -21,7 +21,6 @@ DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 function exports() {
 export ARCH=arm64
 export SUBARCH=arm64
-export LOCALVERSION="-${VERSION}"
 export KBUILD_BUILD_HOST=DroneCI
 export KBUILD_BUILD_USER="TxExcalibur"
 export KBUILD_BUILD_VERSION="1"
