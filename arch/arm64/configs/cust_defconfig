@@ -1,4 +1,4 @@
-CONFIG_LOCALVERSION="-Velvet-Phoenix_vSapphire"
+CONFIG_LOCALVERSION="-Velvet-NiTrix_vSapphire"
 # CONFIG_LOCALVERSION_AUTO is not set
 # CONFIG_FHANDLE is not set
 CONFIG_AUDIT=y
