@@ -34,7 +34,7 @@ DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Compiler and Build Information
-TOOLCHAIN=proton # List ( gcc = eva12 | eva13 | aospa ) (clang = proton | azure | neutron | atomx | aosp | sdclang )
+TOOLCHAIN=neutron # List ( gcc = eva12 | eva13 | aospa ) (clang = proton | azure | neutron | atomx | aosp | sdclang )
 LINKER=ld.lld # List ( ld.lld | ld.bfd | ld.gold | ld )
 VERBOSE=0
 ZIPNAME=Velvet
@@ -100,7 +100,7 @@ elif [[ $TOOLCHAIN == "aosp" ]]; then
        post_msg " Cloning AOSP Clang ToolChain "
        mkdir clang
        cd clang || exit
-       wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784e.tar.gz
+       wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r416183b.tar.gz
        tar -xf clang*
        cd .. || exit
        git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git --depth=1 gcc64
