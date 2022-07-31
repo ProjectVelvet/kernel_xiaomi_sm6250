@@ -10,7 +10,7 @@ set -e
 ##----------------------------------------------------------##
 # Basic Information
 KERNEL_DIR="$(pwd)"
-VERSION=BDay2Day_vSapphire
+VERSION=OzOne_v1.9
 MODEL=Xiaomi
 DEVICE=MiAtoll
 DEFCONFIG=cust_defconfig
