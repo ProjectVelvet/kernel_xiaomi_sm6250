@@ -10,7 +10,7 @@ set -e
 ##----------------------------------------------------------##
 # Basic Information
 KERNEL_DIR="$(pwd)"
-VERSION=OzOne_v1.9
+VERSION=MEG_v2.0
 MODEL=Xiaomi
 DEVICE=MiAtoll
 DEFCONFIG=cust_defconfig
