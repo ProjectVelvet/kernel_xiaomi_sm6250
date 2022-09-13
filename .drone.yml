@@ -3,8 +3,8 @@ clone:
 kind: pipeline
 name : Velvet Kernel
 steps:
- - name: MSMNILE
-   image: panchajanya1999/archlinux:latest
+ - name: SM6250
+   image: ghcr.io/sushrut1101/docker:arch
    environment:
      token:
        from_secret: token
