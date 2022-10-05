@@ -1,0 +1,76 @@
+#!/bin/env bash
+export KDIR=$(pwd)
+export KBUILD_COMPILER_STRING=$($HOME/kernel/toolchains/proton-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+
+#export PATH="$HOME/kernel/toolchains/proton-clang/bin:$PATH"
+export KBUILD_BUILD_HOST="Cookie"
+export KBUILD_BUILD_USER="Sairam"
+export KBUILD_BUILD_VERSION="1"
+export PROCS=$(nproc --all)
+export DISTRO=$(source /etc/os-release && echo "${NAME}")
+export PATH=$HOME/kernel/toolchains/neutron-clang/bin:$PATH
+export LINKER=ld.lld
+
+build() {
+    echo "Building $KDIR"
+    make O=out ARCH=arm64 cust_defconfig
+    make -j${PROCS} O=out \
+                    ARCH=arm64 \
+                    SUBARCH=arm64 \
+                    CC=clang \
+                    CROSS_COMPILE=aarch64-linux-gnu- \
+                    CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                    CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+                    AR=llvm-ar \
+                    NM=llvm-nm \
+                    OBJCOPY=llvm-objcopy \
+                    OBJDUMP=llvm-objdump \
+                    STRIP=llvm-strip \
+                    LD=ld.lld \
+		    2>&1| tee log.txt
+}
+
+conf() {
+    echo "Configure $KDIR"
+    make O=out ARCH=arm64 cust_defconfig
+    make O=out ARCH=arm64 menuconfig
+    cp -rf out/.config arch/arm64/configs/cust_defconfig
+}
+
+
+zip() {
+    echo "Zipping"
+    rsync -av --exclude=".*" $HOME/kernel/AnyKernel3 .
+    cd AnyKernel3
+    rm *.zip Image.gz-dtb dtbo.img
+    cp $KDIR/out/arch/arm64/boot/Image.gz-dtb $KDIR/out/arch/arm64/boot/dtbo.img ./
+    bash -c "zip -r9 redvelvet.zip * -x .git README.md *placeholder"
+    ls -alh --color=auto
+}
+
+bck() {
+    cp arch/arm64/configs/cust_defconfig bck/cust_defconfig
+}
+#i=1;
+#for cmd in "$@"
+#do
+#    echo "$i:$cmd";
+#    $cmd
+#    i=$((i + 1));
+#done
+if test $# = 0
+then
+	build
+	zip
+else
+	i=1;
+	for cmd in "$@"
+	do
+    	   echo "$i:$cmd";
+    	   $cmd
+    	   i=$((i + 1));
+	done
+
+fi
+#build
+#zip
