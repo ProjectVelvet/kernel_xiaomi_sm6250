@@ -2162,8 +2162,8 @@ static int drv2624_i2c_probe(struct i2c_client *client,
 		pDRV2624->mnIRQ = gpio_to_irq(pDRV2624->msPlatData.mnGpioINT);
 		dev_dbg(pDRV2624->dev, "irq = %d \n", pDRV2624->mnIRQ);
 		nResult =
-		    request_threaded_irq(pDRV2624->mnIRQ, drv2624_irq_handler,
-					 NULL,
+		    request_threaded_irq(pDRV2624->mnIRQ, NULL,
+					 drv2624_irq_handler,
 					 IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 					 client->name, pDRV2624);
 		if (nResult < 0) {
