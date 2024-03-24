@@ -1939,7 +1939,7 @@ static void __lim_process_channel_switch_timeout(struct pe_session *pe_session)
 		 * request as it might be from spoof AP. If it's from genuine
 		 * AP, it may lead to heart beat failure and result in
 		 * disconnection. DUT can go ahead and reconnect to it/any
-		 * other AP once it disconnects
+		 * other AP once it disconnects.
 		 */
 		pe_err("Invalid channel freq %u Ignore CSA request",
 		       channel_freq);
