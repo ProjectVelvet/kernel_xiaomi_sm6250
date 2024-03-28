@@ -11,8 +11,10 @@
 #include "klog.h" // IWYU pragma: keep
 #include "ksu.h"
 #include "manager.h"
-#include "uid_observer.h"
+#include "throne_tracker.h"
 #include "kernel_compat.h"
+
+uid_t ksu_manager_uid = KSU_INVALID_UID;
 
 #define SYSTEM_PACKAGES_LIST_PATH "/data/system/packages.list"
 static struct work_struct ksu_update_uid_work;
@@ -32,7 +34,8 @@ static int get_pkg_from_apk_path(char *pkg, const char *path)
 	const char *last_slash = NULL;
 	const char *second_last_slash = NULL;
 
-	for (int i = len - 1; i >= 0; i--) {
+	int i;
+	for (i = len - 1; i >= 0; i--) {
 		if (path[i] == '/') {
 			if (!last_slash) {
 				last_slash = &path[i];
@@ -71,6 +74,14 @@ static void crown_manager(const char *apk, struct list_head *uid_data)
 
 	pr_info("manager pkg: %s\n", pkg);
 
+#ifdef KSU_MANAGER_PACKAGE
+	// pkg is `/<real package>`
+	if (strncmp(pkg, KSU_MANAGER_PACKAGE, sizeof(KSU_MANAGER_PACKAGE))) {
+		pr_info("manager package is inconsistent with kernel build: %s\n",
+			KSU_MANAGER_PACKAGE);
+		return;
+	}
+#endif
 	struct list_head *list = (struct list_head *)uid_data;
 	struct uid_data *np;
 
@@ -90,32 +101,45 @@ struct my_dir_context {
 	int depth;
 	int *stop;
 };
+// https://docs.kernel.org/filesystems/porting.html
+// filldir_t (readdir callbacks) calling conventions have changed. Instead of returning 0 or -E... it returns bool now. false means "no more" (as -E... used to) and true - "keep going" (as 0 in old calling conventions). Rationale: callers never looked at specific -E... values anyway. -> iterate_shared() instances require no changes at all, all filldir_t ones in the tree converted.
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+#define FILLDIR_RETURN_TYPE bool
+#define FILLDIR_ACTOR_CONTINUE true
+#define FILLDIR_ACTOR_STOP false
+#else
+#define FILLDIR_RETURN_TYPE int
+#define FILLDIR_ACTOR_CONTINUE 0
+#define FILLDIR_ACTOR_STOP -EINVAL
+#endif
 
-int my_actor(struct dir_context *ctx, const char *name, int namelen, loff_t off,
-	     u64 ino, unsigned int d_type)
+FILLDIR_RETURN_TYPE my_actor(struct dir_context *ctx, const char *name,
+			     int namelen, loff_t off, u64 ino,
+			     unsigned int d_type)
 {
 	struct my_dir_context *my_ctx =
 		container_of(ctx, struct my_dir_context, ctx);
 	struct file *file;
-	char *dirpath;
+	char dirpath[384]; // 384 is enough for /data/app/<package>/base.apk
 
 	if (!my_ctx) {
 		pr_err("Invalid context\n");
-		return -EINVAL;
+		return FILLDIR_ACTOR_STOP;
 	}
 	if (my_ctx->stop && *my_ctx->stop) {
-		return 1;
+		pr_info("Stop searching\n");
+		return FILLDIR_ACTOR_STOP;
 	}
 
 	if (!strncmp(name, "..", namelen) || !strncmp(name, ".", namelen))
-		return 0; // Skip "." and ".."
+		return FILLDIR_ACTOR_CONTINUE; // Skip "." and ".."
 
-	dirpath = kmalloc(PATH_MAX, GFP_KERNEL);
-	if (!dirpath) {
-		return -ENOMEM; // Failed to obtain directory path
+	if (snprintf(dirpath, sizeof(dirpath), "%s/%.*s", my_ctx->parent_dir,
+		     namelen, name) >= sizeof(dirpath)) {
+		pr_err("Path too long: %s/%.*s\n", my_ctx->parent_dir, namelen,
+		       name);
+		return FILLDIR_ACTOR_CONTINUE;
 	}
-	snprintf(dirpath, PATH_MAX, "%s/%.*s", my_ctx->parent_dir, namelen,
-		 name);
 
 	if (d_type == DT_DIR && my_ctx->depth > 0 &&
 	    (my_ctx->stop && !*my_ctx->stop)) {
@@ -125,12 +149,11 @@ int my_actor(struct dir_context *ctx, const char *name, int namelen, loff_t off,
 							  my_ctx->private_data,
 						  .depth = my_ctx->depth - 1,
 						  .stop = my_ctx->stop };
-		file = ksu_filp_open_compat(dirpath, O_RDONLY, 0);
+		file = ksu_filp_open_compat(dirpath, O_RDONLY | O_NOFOLLOW, 0);
 		if (IS_ERR(file)) {
-			pr_err("Failed to open directory: %s, err: %d\n",
+			pr_err("Failed to open directory: %s, err: %ld\n",
 			       dirpath, PTR_ERR(file));
-			kfree(dirpath);
-			return PTR_ERR(file);
+			return FILLDIR_ACTOR_CONTINUE;
 		}
 
 		iterate_dir(file, &sub_ctx.ctx);
@@ -146,10 +169,9 @@ int my_actor(struct dir_context *ctx, const char *name, int namelen, loff_t off,
 				*my_ctx->stop = 1;
 			}
 		}
-		kfree(dirpath);
 	}
 
-	return 0;
+	return FILLDIR_ACTOR_CONTINUE;
 }
 
 void search_manager(const char *path, int depth, struct list_head *uid_data)
@@ -162,7 +184,7 @@ void search_manager(const char *path, int depth, struct list_head *uid_data)
 				      .depth = depth,
 				      .stop = &stop };
 
-	file = ksu_filp_open_compat(path, O_RDONLY, 0);
+	file = ksu_filp_open_compat(path, O_RDONLY | O_NOFOLLOW, 0);
 	if (IS_ERR(file)) {
 		pr_err("Failed to open directory: %s\n", path);
 		return;
@@ -267,6 +289,7 @@ static void do_update_uid(struct work_struct *work)
 		}
 		pr_info("Searching manager...\n");
 		search_manager("/data/app", 2, &uid_list);
+		pr_info("Search manager finished\n");
 	}
 
 	// then prune the allowlist
@@ -280,18 +303,17 @@ out:
 	filp_close(fp, 0);
 }
 
-void update_uid()
+void track_throne()
 {
 	ksu_queue_work(&ksu_update_uid_work);
 }
 
-int ksu_uid_observer_init()
+void ksu_throne_tracker_init()
 {
 	INIT_WORK(&ksu_update_uid_work, do_update_uid);
-	return 0;
 }
 
-int ksu_uid_observer_exit()
+void ksu_throne_tracker_exit()
 {
-	return 0;
+	// nothing to do
 }
